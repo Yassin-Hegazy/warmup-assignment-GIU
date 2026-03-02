@@ -255,9 +255,9 @@ function addShiftRecord(textFile, shiftObj) {
     let lines = readFileLines(textFile);
 
     // Check for duplicate (same driverID AND date)
-    for (let i = 1; i < lines.length; i++) {
+    for (let i = 0; i < lines.length; i++) {
         let line = lines[i].trim();
-        if (line === "") continue;
+        if (line === "" || line.toLowerCase().startsWith("driverid")) continue;
         let parsed = parseShiftLine(line);
         if (parsed && parsed.driverID === shiftObj.driverID && parsed.date === shiftObj.date) {
             return {};
@@ -287,9 +287,9 @@ function addShiftRecord(textFile, shiftObj) {
 
     // Find the last occurrence of this driverID
     let lastIndex = -1;
-    for (let i = 1; i < lines.length; i++) {
+    for (let i = 0; i < lines.length; i++) {
         let line = lines[i].trim();
-        if (line === "") continue;
+        if (line === "" || line.toLowerCase().startsWith("driverid")) continue;
         let parsed = parseShiftLine(line);
         if (parsed && parsed.driverID === shiftObj.driverID) {
             lastIndex = i;
@@ -319,9 +319,9 @@ function addShiftRecord(textFile, shiftObj) {
 function setBonus(textFile, driverID, date, newValue) {
     let lines = readFileLines(textFile);
 
-    for (let i = 1; i < lines.length; i++) {
+    for (let i = 0; i < lines.length; i++) {
         let line = lines[i].trim();
-        if (line === "") continue;
+        if (line === "" || line.toLowerCase().startsWith("driverid")) continue;
         let parsed = parseShiftLine(line);
         if (parsed && parsed.driverID === driverID && parsed.date === date) {
             parsed.hasBonus = newValue;
@@ -347,9 +347,9 @@ function countBonusPerMonth(textFile, driverID, month) {
     let driverFound = false;
     let count = 0;
 
-    for (let i = 1; i < lines.length; i++) {
+    for (let i = 0; i < lines.length; i++) {
         let line = lines[i].trim();
-        if (line === "") continue;
+        if (line === "" || line.toLowerCase().startsWith("driverid")) continue;
         let parsed = parseShiftLine(line);
         if (!parsed) continue;
         if (parsed.driverID === driverID) {
@@ -379,9 +379,9 @@ function getTotalActiveHoursPerMonth(textFile, driverID, month) {
 
     let totalSec = 0;
 
-    for (let i = 1; i < lines.length; i++) {
+    for (let i = 0; i < lines.length; i++) {
         let line = lines[i].trim();
-        if (line === "") continue;
+        if (line === "" || line.toLowerCase().startsWith("driverid")) continue;
         let parsed = parseShiftLine(line);
         if (!parsed) continue;
         if (parsed.driverID === driverID) {
@@ -416,9 +416,9 @@ function getRequiredHoursPerMonth(textFile, rateFile, bonusCount, driverID, mont
     let dayOff = driverRate.dayOff;
     let totalRequiredSec = 0;
 
-    for (let i = 1; i < lines.length; i++) {
+    for (let i = 0; i < lines.length; i++) {
         let line = lines[i].trim();
-        if (line === "") continue;
+        if (line === "" || line.toLowerCase().startsWith("driverid")) continue;
         let parsed = parseShiftLine(line);
         if (!parsed) continue;
         if (parsed.driverID !== driverID) continue;
