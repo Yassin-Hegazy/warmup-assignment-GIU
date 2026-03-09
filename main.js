@@ -245,12 +245,7 @@ function metQuota(date, activeTime) {
     return activeSec >= quotaSec;
 }
 
-// ============================================================
-// Function 5: addShiftRecord(textFile, shiftObj)
-// textFile: (typeof string) path to shifts text file
-// shiftObj: (typeof object) has driverID, driverName, date, startTime, endTime
-// Returns: object with 10 properties or empty object {}
-// ============================================================
+
 function addShiftRecord(textFile, shiftObj) {
     let lines = readFileLines(textFile);
 
@@ -308,14 +303,7 @@ function addShiftRecord(textFile, shiftObj) {
     return newRecord;
 }
 
-// ============================================================
-// Function 6: setBonus(textFile, driverID, date, newValue)
-// textFile: (typeof string) path to shifts text file
-// driverID: (typeof string)
-// date: (typeof string) formatted as yyyy-mm-dd
-// newValue: (typeof boolean)
-// Returns: nothing (void)
-// ============================================================
+
 function setBonus(textFile, driverID, date, newValue) {
     let lines = readFileLines(textFile);
 
@@ -333,13 +321,7 @@ function setBonus(textFile, driverID, date, newValue) {
     writeFileLines(textFile, lines);
 }
 
-// ============================================================
-// Function 7: countBonusPerMonth(textFile, driverID, month)
-// textFile: (typeof string) path to shifts text file
-// driverID: (typeof string)
-// month: (typeof string) formatted as mm or m
-// Returns: number (-1 if driverID not found)
-// ============================================================
+
 function countBonusPerMonth(textFile, driverID, month) {
     let lines = readFileLines(textFile);
     let monthNum = parseInt(month);
@@ -366,13 +348,7 @@ function countBonusPerMonth(textFile, driverID, month) {
     return count;
 }
 
-// ============================================================
-// Function 8: getTotalActiveHoursPerMonth(textFile, driverID, month)
-// textFile: (typeof string) path to shifts text file
-// driverID: (typeof string)
-// month: (typeof number)
-// Returns: string formatted as hhh:mm:ss
-// ============================================================
+
 function getTotalActiveHoursPerMonth(textFile, driverID, month) {
     let lines = readFileLines(textFile);
     let monthNum = typeof month === "number" ? month : parseInt(month);
@@ -396,15 +372,7 @@ function getTotalActiveHoursPerMonth(textFile, driverID, month) {
     return secondsToTime(totalSec);
 }
 
-// ============================================================
-// Function 9: getRequiredHoursPerMonth(textFile, rateFile, bonusCount, driverID, month)
-// textFile: (typeof string) path to shifts text file
-// rateFile: (typeof string) path to driver rates text file
-// bonusCount: (typeof number) total bonuses for given driver per month
-// driverID: (typeof string)
-// month: (typeof number)
-// Returns: string formatted as hhh:mm:ss
-// ============================================================
+
 function getRequiredHoursPerMonth(textFile, rateFile, bonusCount, driverID, month) {
     let lines = readFileLines(textFile);
     let rates = parseRateFile(rateFile);
@@ -446,14 +414,7 @@ function getRequiredHoursPerMonth(textFile, rateFile, bonusCount, driverID, mont
     return secondsToTime(totalRequiredSec);
 }
 
-// ============================================================
-// Function 10: getNetPay(driverID, actualHours, requiredHours, rateFile)
-// driverID: (typeof string)
-// actualHours: (typeof string) formatted as hhh:mm:ss
-// requiredHours: (typeof string) formatted as hhh:mm:ss
-// rateFile: (typeof string) path to driver rates text file
-// Returns: integer (net pay)
-// ============================================================
+
 function getNetPay(driverID, actualHours, requiredHours, rateFile) {
     let rates = parseRateFile(rateFile);
     let driverRate = rates[driverID];
