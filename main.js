@@ -1,5 +1,4 @@
 const fs = require("fs");
-console.log("main.js loaded");
 
 // ============ INTERNAL HELPER FUNCTIONS (not exported) ============
 
@@ -105,8 +104,8 @@ function parseShiftLine(line) {
         shiftDuration: parts[5].trim(),
         idleTime: parts[6].trim(),
         activeTime: parts[7].trim(),
-        metQuota: parts[8].trim() === "true",
-        hasBonus: parts[9].trim() === "true"
+        metQuota: parts[8].trim().toLowerCase() === "true",
+        hasBonus: parts[9].trim().toLowerCase() === "true"
     };
 }
 
@@ -280,22 +279,27 @@ function addShiftRecord(textFile, shiftObj) {
 
     let newLine = shiftObjToLine(newRecord);
 
-    // Find the last occurrence of this driverID
+    // Keep each driver's records in ascending date order.
     let lastIndex = -1;
+    let insertionIndex = -1;
     for (let i = 0; i < lines.length; i++) {
         let line = lines[i].trim();
         if (line === "" || line.toLowerCase().startsWith("driverid")) continue;
         let parsed = parseShiftLine(line);
         if (parsed && parsed.driverID === shiftObj.driverID) {
             lastIndex = i;
+            if (insertionIndex === -1 && parsed.date > shiftObj.date) {
+                insertionIndex = i;
+            }
         }
     }
 
-    if (lastIndex >= 0) {
-        // Insert right after the last record of this driver
+    if (insertionIndex >= 0) {
+        lines.splice(insertionIndex, 0, newLine);
+    } else if (lastIndex >= 0) {
+        // Driver not in file – append as last record
         lines.splice(lastIndex + 1, 0, newLine);
     } else {
-        // Driver not in file – append as last record
         lines.push(newLine);
     }
 
