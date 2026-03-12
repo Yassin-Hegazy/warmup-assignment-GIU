@@ -1,12 +1,6 @@
 const fs = require("fs");
 
-// ============ INTERNAL HELPER FUNCTIONS (not exported) ============
 
-/**
- * Converts a time string to total seconds since midnight.
- * Accepts "h:mm:ss am/pm" (12-hour clock) or "h:mm:ss" / "hhh:mm:ss" (duration).
- * Handles 12:xx:xx AM = 0 hours, 12:xx:xx PM = 12 hours.
- */
 function timeToSeconds(timeStr) {
     timeStr = timeStr.trim();
     let parts = timeStr.split(/\s+/);
