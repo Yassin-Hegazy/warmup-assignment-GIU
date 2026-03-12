@@ -6,7 +6,6 @@ const fs = require("fs");
  * Converts either a clock time like "6:30:00 pm" or a duration like "12:15:30"
  * into total seconds so all calculations can use one numeric format.
  */
-
 function timeToSeconds(timeStr) {
     timeStr = timeStr.trim();
     let parts = timeStr.split(/\s+/);
@@ -51,14 +50,14 @@ function parseDateToDay(dateStr) {
     let m = Number(parts[1]);
     let d = Number(parts[2]);
     let date = new Date(y, m - 1, d);
-    var days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    let days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
     return days[date.getDay()];
 }
 
-/**
- * Returns true if the date falls in the Eid al-Fitr period (Apr 10–30, 2025 inclusive).
- */
 // Quota drops during the Eid period, so this helper centralizes that date check.
+/**
+ * Returns true if the date falls in the Eid al-Fitr period (Apr 10-30, 2025 inclusive).
+ */
 function isEidPeriod(dateStr) {
     let parts = dateStr.trim().split("-");
     let y = Number(parts[0]);
@@ -75,7 +74,6 @@ function isEidPeriod(dateStr) {
 function readFileLines(filePath) {
     let content = fs.readFileSync(filePath, { encoding: "utf8" });
     let lines = content.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
-    // Remove trailing empty lines
     while (lines.length > 0 && lines[lines.length - 1].trim() === "") {
         lines.pop();
     }
@@ -144,7 +142,6 @@ function parseRateFile(rateFile) {
         let parts = line.split(",");
         if (parts.length < 4) continue;
         let id = parts[0].trim();
-        // Skip header row if present
         if (id.toLowerCase() === "driverid" || id === "") continue;
         rates[id] = {
             driverID: id,
@@ -182,7 +179,6 @@ function getShiftDuration(startTime, endTime) {
     if (endSec >= startSec) {
         duration = endSec - startSec;
     } else {
-        // Overnight shift
         duration = (86400 - startSec) + endSec;
     }
 
@@ -203,11 +199,9 @@ function getIdleTime(startTime, endTime) {
     let activeOverlap;
 
     if (endSec >= startSec) {
-        // Same-day shift
         totalDuration = endSec - startSec;
         activeOverlap = computeActiveOverlap(startSec, endSec);
     } else {
-        // Overnight shift: split into two segments
         totalDuration = (86400 - startSec) + endSec;
         activeOverlap = computeActiveOverlap(startSec, 86400) + computeActiveOverlap(0, endSec);
     }
@@ -241,9 +235,9 @@ function metQuota(date, activeTime) {
     let quotaSec;
 
     if (isEidPeriod(date)) {
-        quotaSec = 6 * 3600; // 6 hours
+        quotaSec = 6 * 3600;
     } else {
-        quotaSec = 8 * 3600 + 24 * 60; // 8 hours 24 minutes = 30240 seconds
+        quotaSec = 8 * 3600 + 24 * 60;
     }
 
     return activeSec >= quotaSec;
@@ -284,27 +278,20 @@ function addShiftRecord(textFile, shiftObj) {
 
     let newLine = shiftObjToLine(newRecord);
 
-    // Keep each driver's records in ascending date order.
+    // Find the last stored row for this driver.
     let lastIndex = -1;
-    let insertionIndex = -1;
     for (let i = 0; i < lines.length; i++) {
         let line = lines[i].trim();
         if (line === "" || line.toLowerCase().startsWith("driverid")) continue;
         let parsed = parseShiftLine(line);
         if (parsed && parsed.driverID === shiftObj.driverID) {
             lastIndex = i;
-            if (insertionIndex === -1 && parsed.date > shiftObj.date) {
-                insertionIndex = i;
-            }
         }
     }
 
-    // Insert before the first later date for this driver; otherwise place the
-    // record after the driver's last stored row, or at the end for a new driver.
-    if (insertionIndex >= 0) {
-        lines.splice(insertionIndex, 0, newLine);
-    } else if (lastIndex >= 0) {
-        // Driver not in file – append as last record
+    // The spec requires inserting after the driver's last existing record.
+    // If the driver does not exist yet, append at the end of the file.
+    if (lastIndex >= 0) {
         lines.splice(lastIndex + 1, 0, newLine);
     } else {
         lines.push(newLine);
@@ -406,11 +393,9 @@ function getRequiredHoursPerMonth(textFile, rateFile, bonusCount, driverID, mont
         let m = Number(dateParts[1]);
         if (m !== monthNum) continue;
 
-        // Skip if this date is the driver's assigned day off
         let weekday = parseDateToDay(parsed.date);
         if (weekday === dayOff) continue;
 
-        // Eid period: 6-hour quota. Otherwise: 8h 24m quota.
         if (isEidPeriod(parsed.date)) {
             totalRequiredSec += 6 * 3600;
         } else {
@@ -418,7 +403,6 @@ function getRequiredHoursPerMonth(textFile, rateFile, bonusCount, driverID, mont
         }
     }
 
-    // Subtract 2 hours for each bonus
     totalRequiredSec -= bonusCount * 2 * 3600;
     if (totalRequiredSec < 0) totalRequiredSec = 0;
 
@@ -440,17 +424,14 @@ function getNetPay(driverID, actualHours, requiredHours, rateFile) {
     let actualSec = timeToSeconds(actualHours);
     let requiredSec = timeToSeconds(requiredHours);
 
-    // No deduction if actual meets or exceeds required
     if (actualSec >= requiredSec) return basePay;
 
     let missingSec = requiredSec - actualSec;
     let missingHours = missingSec / 3600;
 
-    // Subtract the tier allowance
     let billableHours = missingHours - allowance;
     if (billableHours <= 0) return basePay;
 
-    // Only full hours count
     billableHours = Math.floor(billableHours);
 
     let deductionRatePerHour = Math.floor(basePay / 185);
