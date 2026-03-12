@@ -1,5 +1,11 @@
 const fs = require("fs");
 
+// Shared helper functions used by the exported assignment functions.
+
+/**
+ * Converts either a clock time like "6:30:00 pm" or a duration like "12:15:30"
+ * into total seconds so all calculations can use one numeric format.
+ */
 
 function timeToSeconds(timeStr) {
     timeStr = timeStr.trim();
@@ -24,9 +30,8 @@ function timeToSeconds(timeStr) {
 }
 
 /**
- * Converts total seconds to a time/duration string.
- * Format: h:mm:ss (hours are NOT zero-padded; minutes and seconds ARE).
- * Supports arbitrarily large hour values for monthly aggregations.
+ * Converts total seconds back into the assignment format h:mm:ss.
+ * Hours are left unpadded so monthly totals like 146:20:00 stay valid.
  */
 function secondsToTime(totalSeconds) {
     if (totalSeconds < 0) totalSeconds = 0;
@@ -53,6 +58,7 @@ function parseDateToDay(dateStr) {
 /**
  * Returns true if the date falls in the Eid al-Fitr period (Apr 10–30, 2025 inclusive).
  */
+// Quota drops during the Eid period, so this helper centralizes that date check.
 function isEidPeriod(dateStr) {
     let parts = dateStr.trim().split("-");
     let y = Number(parts[0]);
@@ -61,6 +67,7 @@ function isEidPeriod(dateStr) {
     return y === 2025 && m === 4 && d >= 10 && d <= 30;
 }
 
+// Normalizes line endings so the rest of the code can work with one array format.
 /**
  * Reads a text file and returns an array of non-empty, trimmed lines.
  * Handles \r\n, \r, missing trailing newlines, and stray blank rows.
@@ -82,6 +89,7 @@ function writeFileLines(filePath, lines) {
     fs.writeFileSync(filePath, lines.join("\n") + "\n", { encoding: "utf8" });
 }
 
+// Converts one stored shift row into an object so the rest of the code can read fields by name.
 /**
  * Parses a single comma-separated shift data line into an object.
  * Returns null for lines with fewer than 10 fields.
@@ -103,6 +111,7 @@ function parseShiftLine(line) {
     };
 }
 
+// Performs the reverse of parseShiftLine when writing updated data back to disk.
 /**
  * Converts a shift object back into a comma-separated text line.
  */
@@ -121,6 +130,7 @@ function shiftObjToLine(obj) {
     ].join(",");
 }
 
+// Builds a lookup table so salary/day-off data can be accessed in O(1) by driver ID.
 /**
  * Parses the driver rates file into a lookup object keyed by driverID.
  * Each value: { driverID, dayOff, basePay, tier }.
@@ -146,6 +156,7 @@ function parseRateFile(rateFile) {
     return rates;
 }
 
+// Used by getIdleTime to isolate the portion of a shift that happened during delivery hours.
 /**
  * Computes how many seconds of a segment [segStart, segEnd] overlap
  * with the delivery window [8:00 AM, 10:00 PM] = [28800, 79200].
@@ -238,7 +249,7 @@ function metQuota(date, activeTime) {
     return activeSec >= quotaSec;
 }
 
-
+// Creates a full shift record from the raw input object and writes it into the file.
 function addShiftRecord(textFile, shiftObj) {
     let lines = readFileLines(textFile);
 
@@ -288,6 +299,8 @@ function addShiftRecord(textFile, shiftObj) {
         }
     }
 
+    // Insert before the first later date for this driver; otherwise place the
+    // record after the driver's last stored row, or at the end for a new driver.
     if (insertionIndex >= 0) {
         lines.splice(insertionIndex, 0, newLine);
     } else if (lastIndex >= 0) {
@@ -301,7 +314,7 @@ function addShiftRecord(textFile, shiftObj) {
     return newRecord;
 }
 
-
+// Changes only the hasBonus value of the matching driver/date row.
 function setBonus(textFile, driverID, date, newValue) {
     let lines = readFileLines(textFile);
 
@@ -319,7 +332,7 @@ function setBonus(textFile, driverID, date, newValue) {
     writeFileLines(textFile, lines);
 }
 
-
+// Counts how many rows for this driver/month currently have hasBonus = true.
 function countBonusPerMonth(textFile, driverID, month) {
     let lines = readFileLines(textFile);
     let monthNum = parseInt(month);
@@ -346,7 +359,7 @@ function countBonusPerMonth(textFile, driverID, month) {
     return count;
 }
 
-
+// Adds together the activeTime field of all shifts for this driver in the target month.
 function getTotalActiveHoursPerMonth(textFile, driverID, month) {
     let lines = readFileLines(textFile);
     let monthNum = typeof month === "number" ? month : parseInt(month);
@@ -370,7 +383,7 @@ function getTotalActiveHoursPerMonth(textFile, driverID, month) {
     return secondsToTime(totalSec);
 }
 
-
+// Sums the expected quota for the driver's monthly rows, excluding their weekly day off.
 function getRequiredHoursPerMonth(textFile, rateFile, bonusCount, driverID, month) {
     let lines = readFileLines(textFile);
     let rates = parseRateFile(rateFile);
@@ -412,7 +425,7 @@ function getRequiredHoursPerMonth(textFile, rateFile, bonusCount, driverID, mont
     return secondsToTime(totalRequiredSec);
 }
 
-
+// Calculates salary after applying the tier allowance to missing hours first.
 function getNetPay(driverID, actualHours, requiredHours, rateFile) {
     let rates = parseRateFile(rateFile);
     let driverRate = rates[driverID];
